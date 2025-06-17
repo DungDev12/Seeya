@@ -21,18 +21,19 @@ const getAllProducts = async (
   return products;
 };
 
-const updateProductById = async (
-  db: SQLite.SQLiteDatabase,
-  product: Product,
-) => {
-  try {
-    await db.executeSql(
-      'UPDATE products SET name = ? , price = ? WHERE id = ?',
-      [product.name, product.price, product.id],
-    );
-  } catch (error) {
-    console.error('Update product error:', error);
-  }
+const updateProduct = async (db: SQLite.SQLiteDatabase, product: Product) => {
+  await db.executeSql('UPDATE products SET name = ? , price = ? WHERE id = ?', [
+    product.name,
+    product.price,
+    product.id,
+  ]);
 };
 
-export {insertProduct, getAllProducts, updateProductById};
+const deleteProductByID = async (
+  db: SQLite.SQLiteDatabase,
+  productId: number,
+) => {
+  await db.executeSql('DELETE FROM products WHERE id = ?', [productId]);
+};
+
+export {insertProduct, getAllProducts, updateProduct, deleteProductByID};

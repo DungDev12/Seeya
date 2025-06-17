@@ -1,14 +1,14 @@
 import React, {useState} from 'react';
-import {Text, View} from 'react-native';
+import {Keyboard, Text, TouchableWithoutFeedback, View} from 'react-native';
 import {Button, IconButton, TextInput} from 'react-native-paper';
 import {Product} from '../models/Product';
 import {getDBConnection} from '../db/connectDB';
-import {insertProduct} from '../repositories/ProductRepository';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import {createProduct} from '../services/productService';
 
 type NewProductModalProps = {
   initTable: () => Promise<void>;
@@ -23,6 +23,7 @@ const NewProductModal = ({
   status,
 }: NewProductModalProps): React.JSX.Element => {
   const translateY = useSharedValue(300);
+  const [errorTitle, setErrorTitle] = useState<string>('');
 
   React.useEffect(() => {
     translateY.value = withTiming(status.statusNewProduct ? 0 : 300, {
@@ -49,18 +50,23 @@ const NewProductModal = ({
 
   const createNewProduct = async (product: Product) => {
     try {
+      setErrorTitle('');
       const db = await getDBConnection();
-      await insertProduct(db, {
+      await createProduct(db, {
         name: product.name,
         price: product.price * 1000,
       });
+      await initTable();
+      setNewProduct({name: '', price: 0});
+      status.setStatusNewProduct(false);
     } catch (error) {
-      console.log(error);
+      const err = error as Error;
+      setErrorTitle(err.message);
     }
   };
 
   return (
-    <>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <Animated.View
         style={[
           {
@@ -86,7 +92,11 @@ const NewProductModal = ({
             onPress={() => status.setStatusNewProduct(false)}
           />
         </View>
-
+        {errorTitle && (
+          <Text className="text-center text-[16px] font-semibold text-red-600">
+            {errorTitle}
+          </Text>
+        )}
         <View className="mt-4">
           <TextInput
             mode="outlined"
@@ -113,17 +123,15 @@ const NewProductModal = ({
 
           <Button
             onPress={async () => {
+              Keyboard.dismiss();
               //   console.log(newProduct);
               await createNewProduct(newProduct);
-              await initTable();
-              setNewProduct({name: '', price: 0});
-              status.setStatusNewProduct(false);
             }}>
             <Text className="text-[18px]">Tạo</Text>
           </Button>
         </View>
       </Animated.View>
-    </>
+    </TouchableWithoutFeedback>
   );
 };
 
